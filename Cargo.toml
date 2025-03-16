@@ -1,0 +1,30 @@
+[package]
+name = "dispersion"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reqwest = { version = "0.12.14", features = [
+    "multipart",
+    "rustls-tls",
+    "stream",
+    "blocking",
+    "json",
+] }
+octocrab = { version = "0.43.0", features = ["rustls"] }
+tokio = { version = "1.44.0", features = ["full"] }
+url = "2.5.4"
+chrono = "0.4.40"
+eyre = "0.6.12"
+clap = { version = "4.5.32", features = ["derive"] }
+log = "0.4"
+fern = "0.7"
+humantime = "2.1.0"
+regex = "1.11.1"
+tempfile = "3.18.0"
+hyper = { version = "1.6.0", features = ["full"] }
+glob = "0.3.2"
+tar = "0.4.44"
+flate2 = "1.1.0"
+zip = "2.2.3"
+semver = "1.0.26"
