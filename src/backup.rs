@@ -1,8 +1,10 @@
-use std::fs::{self, File};
-use std::io::{self, Write};
+use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
 
 use glob::glob;
+use indicatif::ProgressBar;
+use indicatif::ProgressStyle;
 use log::error;
 
 fn ensure_folder_exists(path: &Path) -> io::Result<()> {
@@ -83,8 +85,18 @@ pub fn move_with_manifest(src: &PathBuf, dst: &PathBuf, is_linux: bool) -> eyre:
     let file_list = load_manifest_files(src, is_linux)?;
     ensure_folder_exists(&dst)?;
 
+    let bar = ProgressBar::new(file_list.len().try_into().unwrap());
+    bar.set_style(
+        ProgressStyle::with_template(
+            "{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] ({pos}/{len}, ETA {eta})",
+        )
+        .unwrap()
+        .progress_chars("#>-"),
+    );
+    let src = src.canonicalize()?;
     for path in file_list.iter() {
-        let dest_path = dst.join(path.strip_prefix(src).unwrap());
+        let path = path.canonicalize()?;
+        let dest_path = dst.join(path.strip_prefix(&src)?);
         ensure_folder_exists(&dest_path.parent().unwrap())?;
         if let Err(e) = move_file(&path, &dest_path) {
             error!(
@@ -94,6 +106,8 @@ pub fn move_with_manifest(src: &PathBuf, dst: &PathBuf, is_linux: bool) -> eyre:
                 e
             );
         }
+        bar.inc(1);
     }
+    bar.finish_and_clear();
     Ok(())
 }

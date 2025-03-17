@@ -192,14 +192,19 @@ async fn main() -> Result<(), eyre::Report> {
                 None => temp_dir.path().into(),
             };
 
-            let artifact_path =
-                match fetch_url(first_version.download_url.clone(), &temp_dir_path).await {
-                    Ok(v) => v,
-                    Err(err) => {
-                        log::error!("Failed to download artifact: {:?}", err);
-                        return Err(err);
-                    }
-                };
+            let artifact_path = match fetch_url(
+                first_version.download_url.clone(),
+                &temp_dir_path,
+                first_version.size_in_bytes,
+            )
+            .await
+            {
+                Ok(v) => v,
+                Err(err) => {
+                    log::error!("Failed to download artifact: {:?}", err);
+                    return Err(err);
+                }
+            };
             log::info!("downloaded to:{:?}", artifact_path);
             let final_path = match unarchive_loop(&artifact_path, &temp_dir_path) {
                 Ok(v) => v, // here start the updater again
