@@ -1,11 +1,12 @@
 use log::error;
+use std::path::PathBuf;
 use std::{env, io, process::ExitStatus};
 use tokio::process::Command;
 
-async fn call_appimage_update(root_path: &str) -> eyre::Result<()> {
+pub async fn call_appimage_update(root_path: &PathBuf) -> eyre::Result<()> {
     // Retrieve the APPIMAGE environment variable
     if let Ok(appimage_path) = env::var("APPIMAGE") {
-        let appimage_update_path = format!("{}/bin/AppImageUpdate-x86_64.AppImage", root_path);
+        let appimage_update_path = root_path.join("/bin/AppImageUpdate-x86_64.AppImage");
 
         // Execute the AppImageUpdate with the appimage_path as an argument
         let status = Command::new(appimage_update_path)
@@ -28,7 +29,7 @@ async fn call_appimage_update(root_path: &str) -> eyre::Result<()> {
     }
 }
 
-async fn run_installer(file_path: &str) -> io::Result<ExitStatus> {
+pub async fn run_installer(file_path: &PathBuf) -> io::Result<ExitStatus> {
     // Create a new Command to execute the installer file
     let mut command = Command::new(file_path);
 

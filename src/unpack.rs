@@ -113,7 +113,7 @@ pub fn unarchive_loop(src: &Path, dir: &Path) -> eyre::Result<PathBuf> {
                 fs::remove_dir_all(new_path)?;
                 Ok(v)
             }
-            Err(_) => Ok(new_path),
+            Err(_) => Ok(files[0].clone()),
         },
         _ => {
             return Ok(new_path);

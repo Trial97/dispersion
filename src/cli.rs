@@ -95,6 +95,9 @@ pub struct CommandArgs {
     )]
     pub build_artifact: Option<String>,
 
+    #[arg(long, help = "The app binary name", value_name = "binary name")]
+    pub app_name: Option<String>,
+
     // config
     #[arg(
         long,

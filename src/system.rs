@@ -11,7 +11,7 @@ fn is_arm() -> bool {
     matches!(std::env::consts::ARCH, "arm" | "aarch64")
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum InstallationType {
     Portable,
     Appimage,
@@ -29,7 +29,7 @@ pub fn get_exe_root_dir() -> Option<PathBuf> {
     }
 }
 
-pub fn get_instalation_type(root_dir: PathBuf) -> InstallationType {
+pub fn get_instalation_type(root_dir: &PathBuf) -> InstallationType {
     let portable_file_path = root_dir.join("portable.txt");
     let portable_dir_path = root_dir.join("UserData");
     match true {

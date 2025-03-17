@@ -1,15 +1,21 @@
+use backup::{backup_app_dir, move_with_manifest};
 use clap::Parser;
+use file_lock::FileLock;
+use install::{call_appimage_update, run_installer};
 use std::fs::{self, create_dir};
 use tempfile::tempdir;
-use tokio;
+use tokio::{self, process::Command};
 
 use download::fetch_url;
-use system::{compare_tags, get_exe_root_dir, get_instalation_type, select_valid_artifacts};
+use system::{
+    InstallationType, compare_tags, get_exe_root_dir, get_instalation_type, select_valid_artifacts,
+};
 use unpack::unarchive_loop;
 
 mod backup;
 mod cli;
 mod download;
+mod file_lock;
 mod github;
 mod install;
 mod system;
@@ -115,15 +121,18 @@ async fn main() -> Result<(), eyre::Report> {
             }
         }
     };
-    let installation_type = get_instalation_type(root_dir);
-    let valid_artifacts =
-        match select_valid_artifacts(&release, build_artifact.to_owned(), installation_type) {
-            Ok(valid_artifacts) => valid_artifacts,
-            Err(err) => {
-                log::error!("Failed to filter artifacts: {:?}", err);
-                return Err(err);
-            }
-        };
+    let installation_type = get_instalation_type(&root_dir);
+    let valid_artifacts = match select_valid_artifacts(
+        &release,
+        build_artifact.to_owned(),
+        installation_type.clone(),
+    ) {
+        Ok(valid_artifacts) => valid_artifacts,
+        Err(err) => {
+            log::error!("Failed to filter artifacts: {:?}", err);
+            return Err(err);
+        }
+    };
     let first_version = match valid_artifacts.first() {
         Some(v) => v,
         None => {
@@ -142,6 +151,23 @@ async fn main() -> Result<(), eyre::Report> {
             std::process::exit(100);
         }
         cli::Commands::Update => {
+            if installation_type == InstallationType::Appimage {
+                match call_appimage_update(&root_dir).await {
+                    Ok(_) => {}
+                    Err(err) => {
+                        log::error!("Failed to call appimage updater: {:?}", err);
+                        return Err(err.into());
+                    }
+                };
+            }
+            let _lock = match FileLock::lock(root_dir.join("update.lock")) {
+                Ok(v) => v,
+                Err(err) => {
+                    log::error!("Failed to lock updater: {:?}", err);
+                    return Err(err.into());
+                }
+            };
+
             let temp_dir = match tempdir() {
                 Ok(v) => v,
                 Err(err) => {
@@ -183,6 +209,63 @@ async fn main() -> Result<(), eyre::Report> {
                 }
             };
             log::info!("unziped to:{:?}", final_path);
+
+            if installation_type == InstallationType::Portable && final_path.is_dir() {
+                match backup_app_dir(
+                    &root_dir,
+                    cli.prism_version.as_deref().unwrap(),
+                    cli.git_commit.as_deref().unwrap(),
+                    cli.build_artifact.as_deref().unwrap(),
+                ) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        log::error!("Failed to backup: {:?}", err);
+                        return Err(err);
+                    }
+                };
+                match move_with_manifest(
+                    &final_path,
+                    &root_dir,
+                    cli.build_artifact.unwrap().to_lowercase().contains("linux"),
+                ) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        log::error!("Failed to copy files: {:?}", err);
+                        return Err(err);
+                    }
+                }
+                match cli.app_name {
+                    None => {}
+                    Some(mut app_name) => {
+                        #[cfg(target_os = "windows")]
+                        {
+                            app_name += ".exe";
+                        }
+                        #[cfg(target_os = "linux")]
+                        {
+                            app_name = "bin/".to_owned() + &app_name;
+                        }
+                        let mut command = Command::new(app_name);
+                        // Set the environment variable if on Windows
+                        #[cfg(target_os = "windows")]
+                        {
+                            command.env("__COMPAT_LAYER", "RUNASINVOKER");
+                        }
+                        // Start the process detached
+                        command.spawn()?;
+                    }
+                };
+            } else {
+                match run_installer(&final_path).await {
+                    Ok(v) => {
+                        std::process::exit(v.code().unwrap_or(1));
+                    }
+                    Err(err) => {
+                        log::error!("Failed to run installer: {:?}", err);
+                        return Err(err.into());
+                    }
+                };
+            }
         }
     }
 

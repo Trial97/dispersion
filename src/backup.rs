@@ -12,25 +12,13 @@ fn ensure_folder_exists(path: &Path) -> io::Result<()> {
     Ok(())
 }
 
-fn ensure_file_exists(path: &Path) -> io::Result<()> {
-    if !path.exists() {
-        File::create(path)?;
-    }
-    Ok(())
-}
-
 fn move_file(src: &Path, dest: &Path) -> io::Result<()> {
     fs::copy(src, dest)?;
     fs::remove_file(src)?;
     Ok(())
 }
 
-pub fn backup_app_dir(
-    root_path: &str,
-    prism_version: &str,
-    prism_git_commit: &str,
-    build_artifact: &str,
-) -> eyre::Result<()> {
+pub fn load_manifest_files(root_path: &PathBuf, is_linux: bool) -> eyre::Result<Vec<PathBuf>> {
     let manifest_path = Path::new(root_path).join("manifest.txt");
     let mut file_list: Vec<String> = Vec::new();
 
@@ -39,10 +27,9 @@ pub fn backup_app_dir(
         let contents = fs::read_to_string(&manifest_path)?;
         file_list.extend(contents.lines().map(|line| line.trim().to_string()));
     }
-
     // If file_list is empty, make a guess based on the platform
     if file_list.is_empty() {
-        if build_artifact.to_lowercase().contains("linux") {
+        if is_linux {
             file_list.push("PrismLauncher".to_string());
             file_list.push("bin".to_string());
             file_list.push("share".to_string());
@@ -64,40 +51,48 @@ pub fn backup_app_dir(
         }
     }
 
+    file_list.iter().try_fold(Vec::new(), |mut acc, file| {
+        let pattern = root_path.join(file);
+        let paths = glob(pattern.to_str().unwrap())?;
+        acc.extend(paths.filter_map(Result::ok));
+        Ok(acc)
+    })
+}
+
+pub fn backup_app_dir(
+    root_path: &PathBuf,
+    prism_version: &str,
+    prism_git_commit: &str,
+    build_artifact: &str,
+) -> eyre::Result<()> {
     // Create backup directory
-    let app_dir = Path::new(root_path);
     let backup_dir = Path::new(root_path).join(format!(
         "backup_{}-{}",
         prism_version.replace(&['\\', '/', ':', '*', '?', '"', '<', '>', '|'][..], "_"),
         prism_git_commit
     ));
 
-    ensure_folder_exists(&backup_dir)?;
+    move_with_manifest(
+        root_path,
+        &backup_dir,
+        build_artifact.to_lowercase().contains("linux"),
+    )
+}
 
-    for glob_pattern in file_list.iter() {
-        let glob_path = app_dir.join(glob_pattern);
+pub fn move_with_manifest(src: &PathBuf, dst: &PathBuf, is_linux: bool) -> eyre::Result<()> {
+    let file_list = load_manifest_files(src, is_linux)?;
+    ensure_folder_exists(&dst)?;
 
-        // Use glob crate to match files with wildcard patterns
-        let files = glob(glob_path.to_str().unwrap())?;
-
-        for entry in files {
-            match entry {
-                Ok(path) => {
-                    let dest_path = backup_dir.join(path.strip_prefix(app_dir).unwrap());
-                    ensure_folder_exists(&dest_path.parent().unwrap())?;
-                    if let Err(e) = move_file(&path, &dest_path) {
-                        error!(
-                            "Failed to backup {} to {}: {}",
-                            path.display(),
-                            dest_path.display(),
-                            e
-                        );
-                    }
-                }
-                Err(e) => {
-                    error!("Failed to match file pattern {}: {}", glob_pattern, e);
-                }
-            }
+    for path in file_list.iter() {
+        let dest_path = dst.join(path.strip_prefix(src).unwrap());
+        ensure_folder_exists(&dest_path.parent().unwrap())?;
+        if let Err(e) = move_file(&path, &dest_path) {
+            error!(
+                "Failed to move {} to {}: {}",
+                path.display(),
+                dest_path.display(),
+                e
+            );
         }
     }
     Ok(())
