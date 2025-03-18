@@ -81,9 +81,9 @@ pub fn backup_app_dir(
     )
 }
 
-pub fn move_with_manifest(src: &PathBuf, dst: &PathBuf, is_linux: bool) -> eyre::Result<()> {
+pub fn move_with_manifest(src: &PathBuf, dst: &Path, is_linux: bool) -> eyre::Result<()> {
     let file_list = load_manifest_files(src, is_linux)?;
-    ensure_folder_exists(&dst)?;
+    ensure_folder_exists(dst)?;
 
     let bar = ProgressBar::new(file_list.len().try_into().unwrap());
     bar.set_style(
@@ -97,7 +97,7 @@ pub fn move_with_manifest(src: &PathBuf, dst: &PathBuf, is_linux: bool) -> eyre:
     for path in file_list.iter() {
         let path = path.canonicalize()?;
         let dest_path = dst.join(path.strip_prefix(&src)?);
-        ensure_folder_exists(&dest_path.parent().unwrap())?;
+        ensure_folder_exists(dest_path.parent().unwrap())?;
         if let Err(e) = move_file(&path, &dest_path) {
             error!(
                 "Failed to move {} to {}: {}",

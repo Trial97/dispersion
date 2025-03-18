@@ -1,12 +1,12 @@
 use log::error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{env, io, process::ExitStatus};
 use tokio::process::Command;
 
-pub async fn call_appimage_update(root_path: &PathBuf) -> eyre::Result<()> {
+pub async fn call_appimage_update(root_path: &Path) -> eyre::Result<()> {
     // Retrieve the APPIMAGE environment variable
     if let Ok(appimage_path) = env::var("APPIMAGE") {
-        let appimage_update_path = root_path.join("/bin/AppImageUpdate-x86_64.AppImage");
+        let appimage_update_path = root_path.join("bin/AppImageUpdate-x86_64.AppImage");
 
         // Execute the AppImageUpdate with the appimage_path as an argument
         let status = Command::new(appimage_update_path)

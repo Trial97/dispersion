@@ -14,6 +14,7 @@ impl FileLock {
             .read(true)
             .write(true)
             .create(true)
+            .truncate(true)
             .open(&path)?;
 
         file.try_lock_exclusive()?; // Try to acquire an exclusive lock
@@ -24,7 +25,7 @@ impl FileLock {
 
 impl Drop for FileLock {
     fn drop(&mut self) {
-        if let Err(e) = self.file.unlock() {
+        if let Err(e) = fs2::FileExt::unlock(&self.file) {
             eprintln!("Failed to unlock file: {}", e);
         }
         if let Err(e) = fs::remove_file(self.path.clone()) {

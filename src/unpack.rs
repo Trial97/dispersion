@@ -115,8 +115,6 @@ pub fn unarchive_loop(src: &Path, dir: &Path) -> eyre::Result<PathBuf> {
             }
             Err(_) => Ok(files[0].clone()),
         },
-        _ => {
-            return Ok(new_path);
-        }
+        _ => Ok(new_path),
     }
 }

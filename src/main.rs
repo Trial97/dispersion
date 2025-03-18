@@ -96,8 +96,8 @@ async fn main() -> Result<(), eyre::Report> {
                 log::error!("Error: git_commit is missing or empty.");
                 return Err(eyre::eyre!("git_commit is missing or empty"));
             }
-            Some(commit) => match commit == release.tag {
-                true => {
+            Some(commit) => {
+                if commit == release.tag {
                     log::info!(
                         "Nothing to do current version is the same as latest release: {:?} vs {:?}",
                         release.tag,
@@ -105,8 +105,7 @@ async fn main() -> Result<(), eyre::Report> {
                     );
                     return Ok(());
                 }
-                false => {}
-            },
+            }
         },
     };
     let root_dir = if cli.root_path.exists() {
@@ -156,7 +155,7 @@ async fn main() -> Result<(), eyre::Report> {
                     Ok(_) => {}
                     Err(err) => {
                         log::error!("Failed to call appimage updater: {:?}", err);
-                        return Err(err.into());
+                        return Err(err);
                     }
                 };
             }

@@ -29,7 +29,7 @@ pub fn get_exe_root_dir() -> Option<PathBuf> {
     }
 }
 
-pub fn get_instalation_type(root_dir: &PathBuf) -> InstallationType {
+pub fn get_instalation_type(root_dir: &Path) -> InstallationType {
     let portable_file_path = root_dir.join("portable.txt");
     let portable_dir_path = root_dir.join("UserData");
     match true {
@@ -53,7 +53,6 @@ pub fn select_valid_artifacts(
     let artifacts: Vec<&PrismArtifact> = release
         .assets
         .iter()
-        .into_iter()
         .filter(|x| !x.name.ends_with(".zsync"))
         .filter(|x| {
             !((installation_type == InstallationType::Appimage)
@@ -139,14 +138,14 @@ pub fn compare_tags(v1: String, v2: String) -> eyre::Result<bool> {
         Ok(version) => version,
         Err(e) => {
             log::error!("Failed to parse v1={:?}", v1);
-            return Err(e.into());
+            return Err(e);
         }
     };
     let v2 = match parse_semver(&v2) {
         Ok(version) => version,
         Err(e) => {
             log::error!("Failed to parse v2={:?}", v1);
-            return Err(e.into());
+            return Err(e);
         }
     };
     Ok(v1 > v2)

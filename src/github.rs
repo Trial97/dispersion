@@ -22,13 +22,13 @@ pub struct PrismRelease {
 
 #[derive(Debug)]
 pub struct PrismArtifact {
-    pub node_id: String,
+    // pub node_id: String,
     pub name: String,
     pub size_in_bytes: usize,
-    pub url: Url,
+    // pub url: Url,
     pub download_url: Url,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+    // pub created_at: DateTime<Utc>,
+    // pub updated_at: DateTime<Utc>,
 }
 
 async fn get_latest_release(octocrab: &Octocrab, cfg: &CommandArgs) -> eyre::Result<PrismRelease> {
@@ -41,13 +41,13 @@ async fn get_latest_release(octocrab: &Octocrab, cfg: &CommandArgs) -> eyre::Res
         .assets
         .iter()
         .map(|asset| PrismArtifact {
-            node_id: asset.node_id.clone(),
+            // node_id: asset.node_id.clone(),
             name: asset.name.clone(),
             size_in_bytes: asset.size.try_into().unwrap(),
-            url: asset.url.clone(),
+            // url: asset.url.clone(),
             download_url: asset.browser_download_url.clone(),
-            created_at: asset.created_at,
-            updated_at: asset.updated_at,
+            // created_at: asset.created_at,
+            // updated_at: asset.updated_at,
         })
         .collect();
     Ok(PrismRelease {
@@ -111,20 +111,18 @@ async fn get_latest_workflow_run(
         .items
         .iter()
         .map(|asset| PrismArtifact {
-            node_id: asset.node_id.clone(),
+            // node_id: asset.node_id.clone(),
             name: asset.name.clone(),
             size_in_bytes: asset.size_in_bytes,
-            url: asset.url.clone(),
+            // url: asset.url.clone(),
             download_url: format!(
                 "https://nightly.link/{}/{}/actions/artifacts/{}.zip",
-                cfg.repo_owner,
-                cfg.repo_name,
-                asset.id.to_string()
+                cfg.repo_owner, cfg.repo_name, asset.id
             )
             .parse()
             .unwrap(),
-            created_at: asset.created_at,
-            updated_at: asset.updated_at,
+            // created_at: asset.created_at,
+            // updated_at: asset.updated_at,
         })
         .collect();
 
