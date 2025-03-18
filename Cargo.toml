@@ -19,7 +19,7 @@ eyre = "0.6.12"
 clap = { version = "4.5.32", features = ["derive"] }
 log = "0.4"
 fern = "0.7"
-humantime = "2.1.0"
+humantime = "2.2.0"
 regex = "1.11.1"
 tempfile = "3.18.0"
 hyper = { version = "1.6.0", features = ["full"] }
