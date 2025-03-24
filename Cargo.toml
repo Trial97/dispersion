@@ -21,7 +21,7 @@ log = "0.4"
 fern = "0.7"
 humantime = "2.2.0"
 regex = "1.11.1"
-tempfile = "3.19.0"
+tempfile = "3.19.1"
 hyper = { version = "1.6.0", features = ["full"] }
 glob = "0.3.2"
 tar = "0.4.44"
