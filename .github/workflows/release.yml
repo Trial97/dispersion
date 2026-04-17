@@ -70,9 +70,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            powershell -Command "Compress-Archive -Path dispersion.exe -DestinationPath ${{ matrix.artifact }}.zip"
+            powershell -Command "& { Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::CreateFromDirectory('.', '${{ matrix.artifact }}.zip') }"
           else
-            zip "${{ matrix.artifact }}.zip" dispersion
+            zip -9 "${{ matrix.artifact }}.zip" dispersion
           fi
 
       - name: Install zipsign
