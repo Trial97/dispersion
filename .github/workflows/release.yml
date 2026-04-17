@@ -61,9 +61,9 @@ jobs:
         shell: bash
         run: |
           if [ "${{ runner.os }}" = "Windows" ]; then
-            cp "${{ matrix.target }}/release/dispersion.exe" "dispersion.exe"
+            cp "target/${{ matrix.target }}/release/dispersion.exe" "dispersion.exe"
           else
-            cp "${{ matrix.target }}/release/dispersion" "dispersion"
+            cp "target/${{ matrix.target }}/release/dispersion" "dispersion"
           fi
 
       - name: Create ZIP
