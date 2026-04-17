@@ -1,0 +1,115 @@
+name: Release
+# This file was generated with AI
+on:
+  push:
+    tags:
+      - "*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: ${{ matrix.job }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - job: linux-x86_64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: dispersion-linux-x86_64
+          - job: linux-aarch64
+            os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact: dispersion-linux-aarch64
+          - job: macos-x86_64
+            os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: dispersion-macos-x86_64
+          - job: macos-aarch64
+            os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: dispersion-macos-aarch64
+          - job: windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: dispersion-windows-x86_64
+          - job: windows-arm
+            os: windows-latest
+            target: aarch64-pc-windows-msvc
+            artifact: dispersion-windows-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Add target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Prepare binary
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp "${{ matrix.target }}/release/dispersion.exe" "dispersion.exe"
+          else
+            cp "${{ matrix.target }}/release/dispersion" "dispersion"
+          fi
+
+      - name: Create ZIP
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            powershell -Command "Compress-Archive -Path dispersion.exe -DestinationPath ${{ matrix.artifact }}.zip"
+          else
+            zip "${{ matrix.artifact }}.zip" dispersion
+          fi
+
+      - name: Install zipsign
+        run: cargo install zipsign
+
+      - name: Sign ZIP
+        run: zipsign sign ${{ matrix.artifact }}.zip
+        env:
+          ZIPSIGN_PRIVATE_KEY: ${{ secrets.ZIPSIGN_PRIVATE_KEY }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}-signed
+          path: ${{ matrix.artifact }}.zip
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          name: Dispersion ${{ github.ref_name }}
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

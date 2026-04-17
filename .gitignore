@@ -1,0 +1,13 @@
+# agents stuff
+/.agents
+/skills-lock.json
+
+# Added by cargo
+
+/target
+
+# logs
+/dispersion.log
+
+# private key
+/keys/private.key
