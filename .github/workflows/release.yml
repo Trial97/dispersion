@@ -79,7 +79,9 @@ jobs:
         run: cargo install zipsign
 
       - name: Sign ZIP
-        run: zipsign sign zip ${{ matrix.artifact }}.zip
+        run: |
+          echo "$ZIPSIGN_PRIVATE_KEY" > private.key
+          zipsign sign zip ${{ matrix.artifact }}.zip private.key
         env:
           ZIPSIGN_PRIVATE_KEY: ${{ secrets.ZIPSIGN_PRIVATE_KEY }}
 
