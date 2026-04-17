@@ -79,6 +79,7 @@ jobs:
         run: cargo install zipsign
 
       - name: Sign ZIP
+        shell: bash
         run: |
           echo "$ZIPSIGN_PRIVATE_KEY" | base64 -d > private.key
           zipsign sign zip ${{ matrix.artifact }}.zip private.key
