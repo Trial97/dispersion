@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
-use crate::paths::{get_exe_root_dir, get_root_dir};
+use crate::paths::get_exe_root_dir;
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
@@ -52,4 +52,6 @@ pub struct Cli {
 
     #[arg(long, help = "root directory", default_value_os_t = get_exe_root_dir().unwrap_or_default())]
     pub root_dir: PathBuf,
+    #[arg(long, help = "compiler type", default_value = "")]
+    pub compiler: String,
 }
