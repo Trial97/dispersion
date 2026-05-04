@@ -14,7 +14,7 @@ reqwest = { version = "0.12.15", features = [
 octocrab = { version = "0.44.1", features = ["rustls"] }
 tokio = { version = "1.47.1", features = ["full"] }
 url = "2.5.4"
-chrono = "0.4.41"
+chrono = "0.4.44"
 eyre = "0.6.12"
 clap = { version = "4.5.48", features = ["derive"] }
 log = "0.4"
