@@ -1,21 +1,12 @@
 use std::path::PathBuf;
 
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
 use crate::paths::get_exe_root_dir;
-
-#[derive(Subcommand, Debug)]
-pub enum Commands {
-    Check,
-    Update,
-}
 
 #[derive(Parser, Debug)]
 #[command[version,about,long_about=None]]
 pub struct Cli {
-    #[command(subcommand)]
-    pub command: Commands,
-
     // logger config
     #[arg(
         long,

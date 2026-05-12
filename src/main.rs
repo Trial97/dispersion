@@ -1,24 +1,25 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+
 use clap::Parser;
+use eframe::egui;
+use egui_commonmark::*;
 use eyre::Result;
 use log::info;
-use self_update::update::ReleaseAsset;
 
-use crate::install_type::InstallationType;
+use crate::{
+    application::App,
+    application_states::{ApplicationStates, Release},
+    install_type::InstallationType,
+};
 
+mod application;
+mod application_states;
 mod cli;
+mod download;
 mod install_type;
 mod logger;
 mod paths;
 mod self_updater;
-
-#[derive(Clone, Debug, Default)]
-pub struct Release {
-    pub name: String,
-    pub version: String,
-    pub date: String,
-    pub body: Option<String>,
-    pub asset: ReleaseAsset,
-}
 
 fn check(cli: &cli::Cli) -> Result<Release> {
     info!("check command");
@@ -86,26 +87,32 @@ fn check(cli: &cli::Cli) -> Result<Release> {
     }
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = cli::Cli::parse();
     logger::init(&cli)?;
     let client = reqwest::blocking::Client::new();
     self_updater::update(&cli, &client)?;
 
-    match cli.command {
-        cli::Commands::Check => {
-            info!("check command");
-            match check(&cli) {
-                Ok(r) => {
-                    println!("New version found:");
-                    println!("{:#?}", r)
-                }
-                Err(_) => todo!(),
-            }
+    info!("check command");
+    match check(&cli) {
+        Ok(r) => {
+            println!("New version found:");
+            println!("{:#?}", r);
+
+            let options = eframe::NativeOptions {
+                viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+                ..Default::default()
+            };
+
+            let _ = eframe::run_native(
+                "My egui App",
+                options,
+                Box::new(|_cc| Ok(Box::new(App::new(cli, r)))),
+            );
         }
-        cli::Commands::Update => {
-            info!("update command")
-        }
+        Err(_) => todo!(),
     }
+
     Ok(())
 }
